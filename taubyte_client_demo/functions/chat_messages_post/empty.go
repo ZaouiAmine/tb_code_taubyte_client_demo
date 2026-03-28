@@ -8,7 +8,8 @@ import (
 
 	"github.com/taubyte/go-sdk/database"
 	"github.com/taubyte/go-sdk/event"
-	"github.com/taubyte/go-sdk/pubsub"
+	httpevent "github.com/taubyte/go-sdk/http/event"
+	pubsubnode "github.com/taubyte/go-sdk/pubsub/node"
 )
 
 type ChatMessage struct {
@@ -63,7 +64,7 @@ func postChatMessage(e event.Event) uint32 {
 		return respondError(h, 500, "failed to store chat message")
 	}
 
-	channel, err := pubsub.Channel(chatChannel)
+	channel, err := pubsubnode.Channel(chatChannel)
 	if err == nil {
 		_ = channel.Publish(encoded)
 	}
@@ -71,7 +72,7 @@ func postChatMessage(e event.Event) uint32 {
 	return respondJSON(h, 201, message)
 }
 
-func respondJSON(h event.HTTP, status int, payload interface{}) uint32 {
+func respondJSON(h httpevent.Event, status int, payload interface{}) uint32 {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		h.Return(500)
@@ -83,7 +84,7 @@ func respondJSON(h event.HTTP, status int, payload interface{}) uint32 {
 	return 0
 }
 
-func respondError(h event.HTTP, status int, message string) uint32 {
+func respondError(h httpevent.Event, status int, message string) uint32 {
 	type errorResponse struct {
 		Error string `json:"error"`
 	}

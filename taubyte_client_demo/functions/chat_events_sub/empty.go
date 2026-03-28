@@ -30,7 +30,7 @@ func handleChatEvents(e event.Event) uint32 {
 	if err != nil {
 		return 1
 	}
-	if channel != "chat" {
+	if channel.Name() != "chat" {
 		return 0
 	}
 

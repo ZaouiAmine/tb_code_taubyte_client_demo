@@ -2,6 +2,7 @@ package lib
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 
 	"github.com/taubyte/go-sdk/database"
@@ -25,12 +26,12 @@ func listChatRooms(e event.Event) uint32 {
 
 	db, err := database.New(dbMatch)
 	if err != nil {
-		return respondError(h, 500, "failed to connect database")
+		return writeError(h, 500, "failed to connect database")
 	}
 
 	keys, err := db.List("chatroom/")
 	if err != nil {
-		return respondError(h, 500, "failed to list chat rooms")
+		return writeError(h, 500, "failed to list chat rooms")
 	}
 	sort.Strings(keys)
 
@@ -48,24 +49,22 @@ func listChatRooms(e event.Event) uint32 {
 		rooms = append(rooms, room)
 	}
 
-	return respondJSON(h, 200, rooms)
-}
-
-func respondJSON(h event.HTTP, status int, payload interface{}) uint32 {
-	body, err := json.Marshal(payload)
+	payload, err := json.Marshal(rooms)
 	if err != nil {
-		h.Return(500)
-		return 0
+		return writeError(h, 500, "failed to encode rooms")
 	}
+
 	h.Headers().Set("Content-Type", "application/json")
-	h.Write(body)
-	h.Return(status)
+	h.Write(payload)
+	h.Return(200)
 	return 0
 }
 
-func respondError(h event.HTTP, status int, message string) uint32 {
-	type errorResponse struct {
-		Error string `json:"error"`
-	}
-	return respondJSON(h, status, errorResponse{Error: message})
+func writeError(h interface {
+	Write([]byte) (int, error)
+	Return(int) error
+}, status int, message string) uint32 {
+	h.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", message)))
+	h.Return(status)
+	return 0
 }

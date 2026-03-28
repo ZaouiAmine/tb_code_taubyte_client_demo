@@ -7,6 +7,7 @@ import (
 
 	"github.com/taubyte/go-sdk/database"
 	"github.com/taubyte/go-sdk/event"
+	httpevent "github.com/taubyte/go-sdk/http/event"
 )
 
 type Note struct {
@@ -81,7 +82,7 @@ func updateNote(e event.Event) uint32 {
 	return respondJSON(h, 200, current)
 }
 
-func respondJSON(h event.HTTP, status int, payload interface{}) uint32 {
+func respondJSON(h httpevent.Event, status int, payload interface{}) uint32 {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		h.Return(500)
@@ -93,7 +94,7 @@ func respondJSON(h event.HTTP, status int, payload interface{}) uint32 {
 	return 0
 }
 
-func respondError(h event.HTTP, status int, message string) uint32 {
+func respondError(h httpevent.Event, status int, message string) uint32 {
 	type errorResponse struct {
 		Error string `json:"error"`
 	}
