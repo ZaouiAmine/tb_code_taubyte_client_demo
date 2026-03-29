@@ -11,8 +11,10 @@ import (
 const chatChannel = "chat"
 
 type websocketBootstrapResponse struct {
-	Channel      string `json:"channel"`
-	WebSocketURL string `json:"websocketUrl"`
+	Channel           string `json:"channel"`
+	WebSocketURL      string `json:"websocketUrl"`
+	RealtimeAvailable bool   `json:"realtimeAvailable"`
+	Message           string `json:"message,omitempty"`
 }
 
 //export getChatWebsocket
@@ -22,20 +24,22 @@ func getChatWebsocket(e event.Event) uint32 {
 		return 1
 	}
 
-	channel, err := pubsubnode.Channel(chatChannel)
-	if err != nil {
-		return respondError(h, 500, "failed to get pubsub channel")
-	}
-
-	url, err := channel.WebSocket().Url()
-	if err != nil {
-		return respondError(h, 500, "failed to generate websocket url")
-	}
-
 	resp := websocketBootstrapResponse{
-		Channel:      chatChannel,
-		WebSocketURL: url.String(),
+		Channel:           chatChannel,
+		RealtimeAvailable: false,
+		Message:           "realtime unavailable, use polling",
 	}
+
+	channel, err := pubsubnode.Channel(chatChannel)
+	if err == nil {
+		url, urlErr := channel.WebSocket().Url()
+		if urlErr == nil {
+			resp.WebSocketURL = url.String()
+			resp.RealtimeAvailable = true
+			resp.Message = ""
+		}
+	}
+
 	return respondJSON(h, 200, resp)
 }
 
@@ -49,11 +53,4 @@ func respondJSON(h httpevent.Event, status int, payload interface{}) uint32 {
 	h.Write(body)
 	h.Return(status)
 	return 0
-}
-
-func respondError(h httpevent.Event, status int, message string) uint32 {
-	type errorResponse struct {
-		Error string `json:"error"`
-	}
-	return respondJSON(h, status, errorResponse{Error: message})
 }
